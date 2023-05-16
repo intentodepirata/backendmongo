@@ -9,12 +9,7 @@ const authTokenRouter = express.Router();
 require("dotenv").config();
 
 // Login con email y password
-authTokenRouter.post(
-  "/login",
-  checkBody,
-  validateLoginDto,
-  authTokenController.login
-);
+authTokenRouter.post("/login", validateLoginDto, authTokenController.login);
 
 // Solicitud autenticada para obtener el perfil del usuario
 authTokenRouter.get("/profile", authTokenController.profile);

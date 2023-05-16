@@ -1,20 +1,26 @@
 const authTokenController = {};
-const checkEmailPassword = require("../utils/checkEmailPassword");
+const userModel = require("../service/schemas/userSchema");
+
 const { SignJWT, jwtVerify } = require("jose");
-const { USERS_BBDD } = require("../bbdd");
+const checkEmailPassword = require("../utils/checkEmailPassword");
 
 authTokenController.login = async (req, res) => {
   // Obtenemos el email y password del body
   const { email, password } = req.body;
   // Si no existe alguno de esos dos campos devolvemos y 400(bad request)
-  if (!email || !password) return res.sendStatus(400);
+  if (!email || !password)
+    return res.status(400).send("El email y el password son obligatorios");
 
   try {
     // Validamos el email y password y obtenemos el guid
-    const { guid } = checkEmailPassword(email, password);
+    const user = await checkEmailPassword(email, password);
+
+    if (!user) {
+      return res.status(404).send("Aun no esta registrado");
+    }
     // GENERAR TOKEN Y DEVOLVER TOKEN
     //Construimos el JWT con el guid
-    const jwtConstructor = new SignJWT({ guid });
+    const jwtConstructor = new SignJWT({ guid: user._id });
 
     // Codificamos la clave secreta definida en la variable de entorno por requisito de la librería jose
     // y poder pasarla en el formato correcto (uint8Array) en el método .sign
@@ -29,7 +35,7 @@ authTokenController.login = async (req, res) => {
 
     console.log(jwt);
     //Si todo es correcto enviamos la respuesta. 200 OK
-    return res.send({ jwt });
+    return res.send({ jwt, user: user.name, email });
   } catch (err) {
     // Si el usuario no existe enviamos un 401 (unauthorized)
     return res.sendStatus(401);
@@ -38,6 +44,7 @@ authTokenController.login = async (req, res) => {
 authTokenController.profile = async (req, res) => {
   // OBTENER CABECERA Y COMPROBAR SU AUTENTICIDAD Y CADUCIDAD
   const { authorization } = req.headers;
+
   const token = authorization && authorization.split(" ")[1];
   console.log(token);
 
@@ -48,9 +55,9 @@ authTokenController.profile = async (req, res) => {
     token,
     encoder.encode(process.env.JWT_SECRET_KEY)
   );
-
+  console.log(payload);
   // Obtenemos los datos del usuario a través de guid
-  const user = USERS_BBDD.find((user) => user.guid === payload.guid);
+  const user = userModel.findById(payload.guid);
   // Si no obtenemos usuario enviamos un  401 (unauthorized)
   if (!user) return res.sendStatus(401);
   // Borramos la password del objeto obtenido para no mostrarla

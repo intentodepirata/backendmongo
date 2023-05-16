@@ -1,4 +1,3 @@
-const { USERS_BBDD } = require("../bbdd.js");
 const userModel = require("../service/schemas/userSchema.js");
 
 const accountController = {};
@@ -6,23 +5,23 @@ const accountController = {};
 accountController.getUser = async (req, res) => {
   const { guid } = req.params;
   console.log(guid);
-  const user = await userModel.find();
+  const user = await userModel.findById(guid);
   if (!user) {
     return res.status(404).send("la cuenta no existe");
   }
   res.send(user);
 };
 accountController.addUser = async (req, res) => {
-  const { guid, name } = req.body;
+  const { name, password, email } = req.body;
 
-  if (!guid || !name) {
+  if (!name || !password || !email) {
     return res.status(400).send("error en el body");
   }
-  const user = await userModel.findById(guid);
+  const user = await userModel.findOne({ email });
   if (user) {
     return res.status(409).send("la cuenta ya existe");
   }
-  const newUser = new userModel({ _id: guid, name });
+  const newUser = new userModel({ name, email, password });
   await newUser.save();
   res.send("cuenta creada");
 };

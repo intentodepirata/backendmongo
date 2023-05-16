@@ -1,9 +1,9 @@
-const { USERS_BBDD } = require("../bbdd.js");
+const userModel = require("../service/schemas/userSchema.js");
 
 // Función para validar email y password
-const checkEmailPassword = (email, password) => {
+const checkEmailPassword = async (email, password) => {
   // Filtramos el email entre las cuentas para buscarlo
-  const user = USERS_BBDD.find((user) => user.email === email);
+  const user = await userModel.findOne({ email }).exec();
   // Si no existe el usuario lanzamos un error
   if (!user) throw new Error();
   // Si la password no coincide con la recibida lanzamos un error
